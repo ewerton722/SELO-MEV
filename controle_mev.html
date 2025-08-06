@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle MEV</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --primary-color: #f7ff00;
+            --secondary-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --background-color: #0d0d0d;
+            --card-background: #282828;
+            --valid-color: #28a745;
+            --expiring-color: #ffc107;
+            --expired-color: #dc3545;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: slideInFromTop 0.8s ease-out;
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .container {
+            background: var(--card-background);
+            border-radius: 15px;
+            padding: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 1s ease-in-out;
+            position: relative;
+            flex-grow: 1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .top-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label, .filter-group input, .filter-group select {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        
+        .button-container button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+
+        .add-item-btn {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            font-size: 1rem;
+        }
+
+        .add-item-btn:hover {
+            background-color: #e6e600;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .export-btn {
+            background-color: #28a745;
+            color: white;
+            font-size: 1rem;
+            display: none;
+        }
+
+        .export-btn:hover {
+            background-color: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .table-container {
+            margin-top: 2rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--secondary-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            animation: slideInFromBottom 0.8s ease-out;
+        }
+
+        @keyframes slideInFromBottom {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+            white-space: nowrap; /* Impede que o conteúdo da célula quebre */
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        th:first-child { border-top-left-radius: 10px; }
+        th:last-child { border-top-right-radius: 10px; }
+
+        tbody tr {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .removable-row {
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+        .removable-row:hover {
+            background-color: #4a4a4a;
+        }
+        .removable-row.selected {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #222;
+        }
+
+        tbody tr:hover {
+            background-color: #3a3a3a;
+            transform: scale(1.01);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .status-valid { color: var(--valid-color); font-weight: 600; }
+        .status-expiring { color: var(--expiring-color); font-weight: 600; }
+        .status-expired { color: var(--expired-color); font-weight: 600; }
+
+        /* Modal Base */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease-in-out;
+            opacity: 0;
+            padding: 1rem;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+            transform: scale(0.9);
+            animation: scaleIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .modal-details .modal-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .modal-details .modal-header .register-id {
+            color: var(--primary-color);
+        }
+        
+        .modal-details .modal-header .pdf-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .modal-details .modal-header .pdf-btn:hover {
+            background-color: #c82333;
+        }
+
+        .modal-details-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .detail-item label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .detail-item span {
+            color: var(--text-color);
+            word-wrap: break-word;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 1.5rem;
+        }
+
+        .modal-actions button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            width: 100%;
+        }
+
+        .btn-edit {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+        }
+        .btn-edit:hover { background-color: #e6e600; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+
+        .btn-remove {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-remove:hover { background-color: #c82333; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+
+        .btn-salvar-edicao {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+        }
+        .btn-salvar-edicao:hover { background-color: #e6e600; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+
+        .btn-limpar-edicao {
+            background-color: #555;
+            color: white;
+        }
+        .btn-limpar-edicao:hover { background-color: #444; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+        
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 1.5rem;
+        }
+
+        .form-actions button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            width: 100%;
+        }
+
+        .btn-salvar {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+        }
+        .btn-salvar:hover {
+            background-color: #e6e600;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-limpar {
+            background-color: #555;
+            color: white;
+        }
+        .btn-limpar:hover {
+            background-color: #444;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        .form-title {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(247, 255, 0, 0.5);
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .edit-table-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        .edit-table-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .edit-table-btn:hover {
+            background-color: #555;
+        }
+
+        #modal-edit-table .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+        #modal-edit-table h3 {
+            margin-bottom: 1.5rem;
+        }
+        #modal-edit-table .btn-group button {
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            font-weight: bold;
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        #modal-edit-table .btn-group button:hover {
+            background-color: #e6e600;
+        }
+        #modal-edit-table .btn-group button.btn-remove-multiple {
+            background-color: #dc3545;
+            color: white;
+        }
+        #modal-edit-table .btn-group button.btn-remove-multiple:hover {
+            background-color: #c82333;
+        }
+        #modal-edit-table .btn-group button.btn-reset {
+            background-color: #555;
+            color: white;
+        }
+        #modal-edit-table .btn-group button.btn-reset:hover {
+            background-color: #444;
+        }
+        
+        #modal-remove-multiple .modal-content {
+            max-width: 900px;
+        }
+        #modal-remove-multiple .removal-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        #modal-remove-multiple .removal-list table {
+            width: 100%;
+            background-color: transparent;
+            box-shadow: none;
+        }
+        #modal-remove-multiple .removal-list table th,
+        #modal-remove-multiple .removal-list table td {
+            font-size: 0.8rem;
+            padding: 8px;
+        }
+        #modal-remove-multiple .removal-list table th:first-child,
+        #modal-remove-multiple .removal-list table td:first-child {
+            width: 50px;
+        }
+        #modal-remove-multiple .removal-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 1.5rem;
+        }
+        #modal-remove-multiple .removal-actions button {
+            flex-grow: 1;
+        }
+
+        #modal-reset .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+        #modal-reset h3 {
+            margin-bottom: 1.5rem;
+        }
+        #modal-reset input {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .styled-confirm-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .styled-confirm-modal h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        .confirm-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 1.5rem;
+        }
+        .confirm-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            flex-grow: 1;
+        }
+        .confirm-yes {
+            background-color: #dc3545;
+            color: white;
+        }
+        .confirm-no {
+            background-color: #555;
+            color: white;
+        }
+
+        /* Media Queries para responsividade */
+        @media (min-width: 768px) {
+            body {
+                padding: 2rem;
+            }
+            .container {
+                padding: 2rem;
+            }
+            .top-bar {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .filter-group {
+                flex-wrap: nowrap;
+                gap: 15px;
+            }
+            .button-container {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .button-container button {
+                width: auto;
+            }
+            .edit-table-container {
+                justify-content: flex-end;
+            }
+            .edit-table-btn {
+                width: auto;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                margin-bottom: -1rem;
+            }
+            .modal-details .modal-header {
+                flex-direction: row;
+            }
+            .modal-details-grid,
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .modal-actions, .form-actions {
+                flex-direction: row;
+            }
+            .modal-content {
+                padding: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Controle MEV</h1>
+
+    <div class="container">
+        <div class="top-bar">
+            <h2>Status do Selo</h2>
+            <div class="filter-group">
+                <label for="filter-status">Status:</label>
+                <select id="filter-status">
+                    <option value="todos">Todos</option>
+                    <option value="válido">Válido</option>
+                    <option value="vence">Vence</option>
+                    <option value="expirado">Expirado</option>
+                </select>
+                <label for="search-id">Pesquisar N°:</label>
+                <input type="number" id="search-id" placeholder="Ex: 1">
+            </div>
+        </div>
+
+        <div class="edit-table-container">
+            <button id="edit-table-btn" class="edit-table-btn">Editar Tabela</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Equipamento</th>
+                        <th>Capacidade</th>
+                        <th>Horímetro</th>
+                        <th>Frota</th>
+                        <th>Placa</th>
+                        <th>Nº de Série</th>
+                        <th>DT SGC</th>
+                        <th>RENAVAM</th>
+                        <th>Chassi</th>
+                        <th>Ano Fabricação</th>
+                        <th>Ano Modelo</th>
+                        <th>Espécie / Tipo</th>
+                        <th>Marca / Modelo</th>
+                        <th>Início</th>
+                        <th>Validade</th>
+                        <th>Observações</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="itens-tabela">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="button-container">
+            <button id="export-excel" class="export-btn">Exportar (Excel)</button>
+            <button id="add-item-btn" class="add-item-btn">Adicionar Item</button>
+        </div>
+    </div>
+
+    <div id="modal-cadastro" class="modal">
+        <div class="modal-content">
+            <h3 class="form-title">Cadastro de Itens</h3>
+            <form id="form-cadastro">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="equipamento">Equipamento</label>
+                        <select id="equipamento" required>
+                            <option value="">Selecione...</option>
+                            <option value="COMBOIO">COMBOIO</option>
+                            <option value="CAVALO">CAVALO</option>
+                            <option value="CARRETA">CARRETA</option>
+                            <option value="GUINDASTE">GUINDASTE</option>
+                            <option value="ORMIG">ORMIG</option>
+                            <option value="EMPILHADEIRA">EMPILHADEIRA</option>
+                            <option value="CAMINHÃO">CAMINHÃO</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="capacidade">Capacidade</label>
+                        <input type="text" id="capacidade" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="horimetro">Horímetro</label>
+                        <input type="number" id="horimetro" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frota">Frota</label>
+                        <select id="frota" required>
+                            <option value="">Selecione...</option>
+                            <option value="2091">2091</option><option value="6082">6082</option><option value="7017">7017</option><option value="7018">7018</option><option value="7019">7019</option><option value="7020">7020</option><option value="13004">13004</option><option value="13006">13006</option><option value="13009">13009</option><option value="13012">13012</option><option value="13015">13015</option><option value="14027">14027</option><option value="17512">17512</option><option value="40/100/33">40/100/33</option><option value="40/100/34">40/100/34</option><option value="40/100/42">40/100/42</option><option value="40/100/43">40/100/43</option><option value="40/100/45">40/100/45</option><option value="40/110/14">40/110/14</option><option value="40/110/18">40/110/18</option><option value="40/110/19">40/110/19</option><option value="40/110/22">40/110/22</option><option value="40/120/02">40/120/02</option><option value="40/200/01">40/200/01</option><option value="40/250/14">40/250/14</option><option value="40/250/15">40/250/15</option><option value="40/250/16">40/250/16</option><option value="40/250/17">40/250/17</option><option value="40/250/18">40/250/18</option><option value="40/250/20">40/250/20</option><option value="40/250/21">40/250/21</option><option value="40/250/23">40/250/23</option><option value="40/250/30">40/250/30</option><option value="40/250/31">40/250/31</option><option value="40/250/35">40/250/35</option><option value="40/250/36">40/250/36</option><option value="40/250/37">40/250/37</option><option value="40/250/38">40/250/38</option><option value="40/30/53">40/30/53</option><option value="40/30/55">40/30/55</option><option value="40/30/57">40/30/57</option><option value="40/30/58">40/30/58</option><option value="40/30/59">40/30/59</option><option value="40/60/71">40/60/71</option><option value="40/60/77">40/60/77</option><option value="40/75/05">40/75/05</option><option value="40/75/11">40/75/11</option><option value="40/75/14">40/75/14</option><option value="40/75/15">40/75/15</option><option value="40/85/08">40/85/08</option><option value="40/85/17">40/85/17</option><option value="40/85/19">40/85/19</option><option value="42/30/01">42/30/01</option><option value="42/30/02">42/30/02</option><option value="42/55/02">42/55/02</option><option value="42/70/04">42/70/04</option><option value="42/70/05">42/70/05</option><option value="42/70/07">42/70/07</option><option value="46/10/04">46/10/04</option><option value="46/10/05">46/10/05</option><option value="46/10/06">46/10/06</option><option value="46/10/07">46/10/07</option><option value="46/10/08">46/10/08</option><option value="46/14/01">46/14/01</option><option value="46/14/02">46/14/02</option><option value="46/14/03">46/14/03</option><option value="76/03/02">76/03/02</option><option value="76/03/03">76/03/03</option><option value="76/03/04">76/03/04</option><option value="76/03/05">76/03/05</option><option value="76/03/06">76/03/06</option><option value="76/03/07">76/03/07</option><option value="76/03/08">76/03/08</option><option value="76/03/09">76/03/09</option><option value="76/04/03">76/04/03</option><option value="76/04/04">76/04/04</option><option value="76/04/05">76/04/05</option><option value="76/04/06">76/04/06</option><option value="76/04/07">76/04/07</option><option value="76/04/08">76/04/08</option><option value="76/04/09">76/04/09</option><option value="76/04/10">76/04/10</option><option value="76/04/11">76/04/11</option><option value="76/04/12">76/04/12</option><option value="76/04/13">76/04/13</option><option value="76/04/14">76/04/14</option><option value="76/05/02">76/05/02</option><option value="76/05/03">76/05/03</option><option value="76/05/04">76/05/04</option><option value="76/07/08">76/07/08</option><option value="76/07/09">76/07/09</option><option value="76/07/10">76/07/10</option><option value="76/07/12">76/07/12</option><option value="76/07/13">76/07/13</option><option value="76/07/14">76/07/14</option><option value="76/16/02">76/16/02</option><option value="76/16/03">76/16/03</option><option value="80/10/01">80/10/01</option><option value="80/10/02">80/10/02</option><option value="80/10/03">80/10/03</option><option value="80/10/04">80/10/04</option><option value="80/10/05">80/10/05</option><option value="80/10/06">80/10/06</option><option value="80/10/07">80/10/07</option><option value="80/10/08">80/10/08</option><option value="80/10/09">80/10/09</option><option value="80/10/10">80/10/10</option><option value="80/10/11">80/10/11</option><option value="80/10/12">80/10/12</option><option value="80/10/13">80/10/13</option><option value="80/10/14">80/10/14</option><option value="80/10/15">80/10/15</option><option value="80/10/16">80/10/16</option><option value="80/10/17">80/10/17</option><option value="80/10/18">80/10/18</option><option value="80/10/19">80/10/19</option><option value="80/10/20">80/10/20</option><option value="80/22/09">80/22/09</option>
+                            <option value="adicionar-novo">Adicionar nova frota...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="placa">Placa</label>
+                        <input type="text" id="placa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="n-serie">Nº de Série</label>
+                        <input type="text" id="n-serie" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dt-sgc">DT SGC</label>
+                        <input type="datetime-local" id="dt-sgc" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="renavam">RENAVAM</label>
+                        <input type="number" id="renavam" required maxlength="11" oninput="if(this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chassi">Chassi</label>
+                        <input type="text" id="chassi" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ano-fabricacao">Ano de Fabricação</label>
+                        <input type="number" id="ano-fabricacao" required min="1900" max="2100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ano-modelo">Ano do Modelo</label>
+                        <input type="number" id="ano-modelo" required min="1900" max="2100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="especie-tipo">Espécie / Tipo</label>
+                        <select id="especie-tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="MISTO">MISTO</option>
+                            <option value="CARGA">CARGA</option>
+                            <option value="PASSEIO">PASSEIO</option>
+                            <option value="ESPECIAL">ESPECIAL</option>
+                            <option value="TRAÇÃO">TRAÇÃO</option>
+                            <option value="adicionar-novo">Adicionar nova espécie/tipo...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="marca-modelo">Marca / Modelo</label>
+                        <input type="text" id="marca-modelo" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data-inicio">Data de Início</label>
+                        <input type="datetime-local" id="data-inicio" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data-validade">Data de Validade</label>
+                        <input type="datetime-local" id="data-validade" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="observacoes">Observações</label>
+                        <textarea id="observacoes" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="reset" class="btn-limpar">Limpar</button>
+                    <button type="submit" class="btn-salvar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-detalhes" class="modal">
+        <div class="modal-content modal-details">
+            <div class="modal-header">
+                <span class="register-id">Nº: </span>
+                <button class="pdf-btn">PDF</button>
+            </div>
+            <div class="modal-details-grid" id="details-container">
+                </div>
+            <div class="modal-actions">
+                <button id="btn-remover" class="btn-remove">Remover</button>
+                <button id="btn-editar" class="btn-edit">Editar itens</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edicao" class="modal">
+        <div class="modal-content modal-details">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label for="edit-item-id">Nº:</label>
+                    <input type="number" id="edit-item-id" style="width: 60px; text-align: center; background: #333; color: white; border: none; border-radius: 5px;">
+                </div>
+            </div>
+            <form id="form-edicao">
+                <div class="form-grid" id="edit-form-grid">
+                    </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-limpar-edicao" class="btn-limpar-edicao">Limpar</button>
+                    <button type="submit" id="btn-salvar-edicao" class="btn-salvar-edicao">Salvar alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="modal-edit-table" class="modal">
+        <div class="modal-content">
+            <h3 class="form-title">Opções da Tabela</h3>
+            <div class="btn-group">
+                <button id="btn-edit-items">Editar Itens</button>
+                <button id="btn-remove-multiple-items" class="btn-remove-multiple">Remover Itens</button>
+                <button id="btn-reset-table" class="btn-reset">Resetar Tabela</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-remove-multiple" class="modal">
+        <div class="modal-content">
+            <h3 class="form-title">Remover Múltiplos Itens</h3>
+            <div class="removal-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sel.</th>
+                            <th>Nº</th>
+                            <th>Frota</th>
+                            <th>Equipamento</th>
+                            <th>Placa</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="removable-items-list">
+                        </tbody>
+                </table>
+            </div>
+            <div class="removal-actions">
+                <button id="btn-cancel-removal" class="btn-limpar">Cancelar</button>
+                <button id="btn-confirm-multiple-removal" class="btn-remove">Remover Selecionados</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-reset" class="modal">
+        <div class="modal-content">
+            <h3 class="form-title">Resetar Tabela</h3>
+            <p>Atenção: Esta ação apagará permanentemente todos os dados.</p>
+            <p>Digite o código de segurança para confirmar.</p>
+            <input type="password" id="security-code" placeholder="Código de Segurança">
+            <div class="modal-actions">
+                <button id="btn-cancel-reset" class="btn-limpar">Cancelar</button>
+                <button id="btn-confirm-reset" class="btn-remove">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-confirm-remove" class="modal styled-confirm-modal">
+        <div class="modal-content">
+            <h4>Tem certeza que deseja remover este cadastro?</h4>
+            <div class="confirm-actions">
+                <button id="confirm-yes" class="confirm-yes">Sim</button>
+                <button id="confirm-no" class="confirm-no">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-exit-edit" class="modal styled-confirm-modal">
+        <div class="modal-content">
+            <h4>Deseja sair do modo de edição?</h4>
+            <p>Alterações não salvas serão perdidas.</p>
+            <div class="confirm-actions">
+                <button id="exit-edit-yes" class="confirm-yes">Sim</button>
+                <button id="exit-edit-no" class="confirm-no">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const addItemBtn = document.getElementById('add-item-btn');
+            const exportExcelBtn = document.getElementById('export-excel');
+            const editTableBtn = document.getElementById('edit-table-btn');
+
+            const modalCadastro = document.getElementById('modal-cadastro');
+            const modalDetalhes = document.getElementById('modal-detalhes');
+            const modalEdicao = document.getElementById('modal-edicao');
+            const modalConfirmRemove = document.getElementById('modal-confirm-remove');
+            const modalEditTable = document.getElementById('modal-edit-table');
+            const modalRemoveMultiple = document.getElementById('modal-remove-multiple');
+            const modalReset = document.getElementById('modal-reset');
+            const modalExitEdit = document.getElementById('modal-exit-edit');
+            
+            const formCadastro = document.getElementById('form-cadastro');
+            const formEdicao = document.getElementById('form-edicao');
+            const tbody = document.getElementById('itens-tabela');
+            const removableListBody = document.getElementById('removable-items-list');
+
+            const frotaSelect = document.getElementById('frota');
+            const especieTipoSelect = document.getElementById('especie-tipo');
+            const filterStatus = document.getElementById('filter-status');
+            const searchId = document.getElementById('search-id');
+
+            let itemsData = JSON.parse(localStorage.getItem('controleMEVItems')) || [];
+            let currentEditIndex = null;
+            let selectedForRemoval = new Set();
+            const SECURITY_CODE = '0508';
+
+            // Adicionar nova frota e espécie/tipo
+            frotaSelect.addEventListener('change', (e) => handleDynamicSelect(e, frotaSelect, 'frota'));
+            especieTipoSelect.addEventListener('change', (e) => handleDynamicSelect(e, especieTipoSelect, 'espécie/tipo'));
+
+            function handleDynamicSelect(e, selectElement, type) {
+                if (e.target.value === 'adicionar-novo') {
+                    const newValue = prompt(`Digite o novo ${type}:`);
+                    if (newValue) {
+                        const newOption = document.createElement('option');
+                        newOption.value = newValue.toUpperCase();
+                        newOption.textContent = newValue.toUpperCase();
+                        selectElement.insertBefore(newOption, selectElement.querySelector('option[value="adicionar-novo"]'));
+                        selectElement.value = newValue.toUpperCase();
+                    } else {
+                        selectElement.value = '';
+                    }
+                }
+            }
+
+            // Lógica para abrir modais
+            addItemBtn.addEventListener('click', () => modalCadastro.classList.add('show'));
+            editTableBtn.addEventListener('click', () => modalEditTable.classList.add('show'));
+
+            // Lógica para fechar modais ao clicar fora
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        if (modal.id === 'modal-edicao') {
+                            modalExitEdit.classList.add('show');
+                        } else {
+                            modal.classList.remove('show');
+                        }
+                    }
+                });
+            });
+
+            // Lógica para o modal de confirmação de saída do modo de edição
+            document.getElementById('exit-edit-yes').addEventListener('click', () => {
+                modalExitEdit.classList.remove('show');
+                modalEdicao.classList.remove('show');
+            });
+            document.getElementById('exit-edit-no').addEventListener('click', () => {
+                modalExitEdit.classList.remove('show');
+            });
+
+            // Lógica para os botões do modal "Editar Tabela"
+            document.getElementById('btn-edit-items').addEventListener('click', () => {
+                modalEditTable.classList.remove('show');
+                if (itemsData.length > 0) {
+                    currentEditIndex = 0; // Abre no primeiro item
+                    prefillEditForm(currentEditIndex);
+                    modalEdicao.classList.add('show');
+                } else {
+                    alert('Nenhum item cadastrado para edição.');
+                }
+            });
+
+            document.getElementById('btn-remove-multiple-items').addEventListener('click', () => {
+                modalEditTable.classList.remove('show');
+                openRemoveMultipleModal();
+            });
+
+            document.getElementById('btn-reset-table').addEventListener('click', () => {
+                modalEditTable.classList.remove('show');
+                modalReset.classList.add('show');
+                document.getElementById('security-code').value = '';
+            });
+
+            // Lógica do modal de Reset
+            document.getElementById('btn-cancel-reset').addEventListener('click', () => {
+                modalReset.classList.remove('show');
+            });
+            document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+                const enteredCode = document.getElementById('security-code').value;
+                if (enteredCode === SECURITY_CODE) {
+                    localStorage.removeItem('controleMEVItems');
+                    itemsData = [];
+                    updateTable();
+                    modalReset.classList.remove('show');
+                    alert('Todos os dados foram resetados com sucesso.');
+                } else {
+                    alert('Código de segurança incorreto. Tente novamente.');
+                }
+            });
+
+            // Lógica do modal de Remoção Múltipla
+            function openRemoveMultipleModal() {
+                removableListBody.innerHTML = '';
+                itemsData.forEach((item, index) => {
+                    const row = removableListBody.insertRow();
+                    row.className = 'removable-row';
+                    row.setAttribute('data-index', index);
+                    row.innerHTML = `
+                        <td><input type="checkbox" data-index="${index}"></td>
+                        <td>${index + 1}</td>
+                        <td>${item.frota}</td>
+                        <td>${item.equipamento}</td>
+                        <td>${item.placa}</td>
+                        <td>${getStatus(item.dataInicio, item.dataValidade).text}</td>
+                    `;
+                });
+                modalRemoveMultiple.classList.add('show');
+            }
+            removableListBody.addEventListener('click', (e) => {
+                const checkbox = e.target.closest('input[type="checkbox"]');
+                if (checkbox) {
+                    const index = parseInt(checkbox.getAttribute('data-index'));
+                    const row = checkbox.closest('tr');
+                    if (checkbox.checked) {
+                        selectedForRemoval.add(index);
+                        row.classList.add('selected');
+                    } else {
+                        selectedForRemoval.delete(index);
+                        row.classList.remove('selected');
+                    }
+                }
+            });
+            document.getElementById('btn-cancel-removal').addEventListener('click', () => {
+                modalRemoveMultiple.classList.remove('show');
+                selectedForRemoval.clear();
+            });
+            document.getElementById('btn-confirm-multiple-removal').addEventListener('click', () => {
+                if (selectedForRemoval.size === 0) {
+                    alert('Nenhum item selecionado para remoção.');
+                    return;
+                }
+                if (confirm(`Tem certeza que deseja remover ${selectedForRemoval.size} item(s) selecionado(s)?`)) {
+                    const indexesToRemove = Array.from(selectedForRemoval).sort((a, b) => b - a);
+                    indexesToRemove.forEach(index => {
+                        itemsData.splice(index, 1);
+                    });
+                    localStorage.setItem('controleMEVItems', JSON.stringify(itemsData));
+                    selectedForRemoval.clear();
+                    updateTable();
+                    modalRemoveMultiple.classList.remove('show');
+                }
+            });
+
+            // Limpa o formulário de cadastro e fecha o modal
+            formCadastro.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const novoItem = {
+                    equipamento: document.getElementById('equipamento').value,
+                    capacidade: document.getElementById('capacidade').value,
+                    horimetro: document.getElementById('horimetro').value,
+                    frota: document.getElementById('frota').value,
+                    placa: document.getElementById('placa').value,
+                    nSerie: document.getElementById('n-serie').value,
+                    dtSgc: document.getElementById('dt-sgc').value,
+                    renavam: document.getElementById('renavam').value,
+                    chassi: document.getElementById('chassi').value,
+                    anoFabricacao: document.getElementById('ano-fabricacao').value,
+                    anoModelo: document.getElementById('ano-modelo').value,
+                    especieTipo: document.getElementById('especie-tipo').value,
+                    marcaModelo: document.getElementById('marca-modelo').value,
+                    dataInicio: document.getElementById('data-inicio').value,
+                    dataValidade: document.getElementById('data-validade').value,
+                    observacoes: document.getElementById('observacoes').value
+                };
+                itemsData.push(novoItem);
+                localStorage.setItem('controleMEVItems', JSON.stringify(itemsData));
+                formCadastro.reset();
+                modalCadastro.classList.remove('show');
+                updateTable();
+            });
+
+            // Atualiza a tabela
+            function updateTable() {
+                tbody.innerHTML = '';
+                const filter = filterStatus.value;
+                const search = searchId.value.trim();
+                const filteredItems = itemsData.filter((item, index) => {
+                    const status = getStatus(item.dataInicio, item.dataValidade).baseStatus;
+                    const idMatch = search === '' || (index + 1) === parseInt(search);
+                    const statusMatch = filter === 'todos' || status.toLowerCase().includes(filter);
+                    return idMatch && statusMatch;
+                });
+            
+                filteredItems.forEach((item, index) => {
+                    const originalIndex = itemsData.indexOf(item);
+                    const status = getStatus(item.dataInicio, item.dataValidade);
+                    
+                    const row = tbody.insertRow();
+                    row.setAttribute('data-index', originalIndex);
+                    row.innerHTML = `
+                        <td>${originalIndex + 1}</td>
+                        <td>${item.equipamento}</td>
+                        <td>${item.capacidade}</td>
+                        <td>${item.horimetro}</td>
+                        <td>${item.frota}</td>
+                        <td>${item.placa}</td>
+                        <td>${item.nSerie}</td>
+                        <td>${formatDate(item.dtSgc)}</td>
+                        <td>${item.renavam}</td>
+                        <td>${item.chassi}</td>
+                        <td>${item.anoFabricacao}</td>
+                        <td>${item.anoModelo}</td>
+                        <td>${item.especieTipo}</td>
+                        <td>${item.marcaModelo}</td>
+                        <td>${formatDate(item.dataInicio)}</td>
+                        <td>${formatDate(item.dataValidade)}</td>
+                        <td>${item.observacoes}</td>
+                        <td class="${status.class}">${status.text}</td>
+                    `;
+                });
+
+                if (itemsData.length > 0) {
+                    exportExcelBtn.style.display = 'block';
+                } else {
+                    exportExcelBtn.style.display = 'none';
+                }
+            }
+
+            // Lógica do Status
+            function getStatus(dataInicio, dataValidade) {
+                const now = new Date();
+                const inicio = new Date(dataInicio);
+                const validade = new Date(dataValidade);
+                
+                if (now < inicio) {
+                    return { text: 'Válido', class: 'status-valid', baseStatus: 'válido' };
+                }
+
+                if (now > validade) {
+                    const diffDays = Math.floor((now - validade) / (1000 * 60 * 60 * 24));
+                    return { text: `Expirado há ${diffDays} dias`, class: 'status-expired', baseStatus: 'expirado' };
+                } else {
+                    const diffDays = Math.ceil((validade - now) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 30) {
+                        return { text: `Vence em ${diffDays} dias`, class: 'status-expiring', baseStatus: 'vence' };
+                    } else {
+                        return { text: 'Válido', class: 'status-valid', baseStatus: 'válido' };
+                    }
+                }
+            }
+
+            // Filtros de Tabela
+            filterStatus.addEventListener('change', updateTable);
+            searchId.addEventListener('input', updateTable);
+
+            // Abre modal de detalhes ao clicar na linha
+            tbody.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+
+                const index = parseInt(row.getAttribute('data-index'));
+                const item = itemsData[index];
+                currentEditIndex = index;
+
+                const detailsContainer = document.getElementById('details-container');
+                detailsContainer.innerHTML = '';
+                
+                document.querySelector('#modal-detalhes .register-id').textContent = `Nº: ${index + 1}`;
+
+                const labels = {
+                    equipamento: 'Equipamento', capacidade: 'Capacidade', horimetro: 'Horímetro',
+                    frota: 'Frota', placa: 'Placa', nSerie: 'Nº de Série', dtSgc: 'DT SGC',
+                    renavam: 'RENAVAM', chassi: 'Chassi', anoFabricacao: 'Ano Fabricação',
+                    anoModelo: 'Ano Modelo', especieTipo: 'Espécie / Tipo', marcaModelo: 'Marca / Modelo',
+                    dataInicio: 'Data de Início', dataValidade: 'Data de Validade', observacoes: 'Observações'
+                };
+
+                for (const key in labels) {
+                    const div = document.createElement('div');
+                    div.className = 'detail-item';
+                    const label = document.createElement('label');
+                    label.textContent = labels[key];
+                    const span = document.createElement('span');
+                    span.textContent = ['dtSgc', 'dataInicio', 'dataValidade'].includes(key) ? formatDate(item[key]) : item[key];
+                    div.appendChild(label);
+                    div.appendChild(span);
+                    detailsContainer.appendChild(div);
+                }
+
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'detail-item';
+                const statusLabel = document.createElement('label');
+                statusLabel.textContent = 'Status';
+                const statusSpan = document.createElement('span');
+                const status = getStatus(item.dataInicio, item.dataValidade);
+                statusSpan.textContent = status.text;
+                statusSpan.className = status.class;
+                statusDiv.appendChild(statusLabel);
+                statusDiv.appendChild(statusSpan);
+                detailsContainer.appendChild(statusDiv);
+
+                modalDetalhes.classList.add('show');
+            });
+            
+            // Botão Remover
+            document.getElementById('btn-remover').addEventListener('click', () => {
+                modalDetalhes.classList.remove('show');
+                modalConfirmRemove.classList.add('show');
+            });
+
+            document.getElementById('confirm-yes').addEventListener('click', () => {
+                if (currentEditIndex !== null) {
+                    itemsData.splice(currentEditIndex, 1);
+                    localStorage.setItem('controleMEVItems', JSON.stringify(itemsData));
+                    currentEditIndex = null;
+                    updateTable();
+                    modalConfirmRemove.classList.remove('show');
+                }
+            });
+
+            document.getElementById('confirm-no').addEventListener('click', () => {
+                modalConfirmRemove.classList.remove('show');
+                modalDetalhes.classList.add('show');
+            });
+
+            // Botão Editar
+            document.getElementById('btn-editar').addEventListener('click', () => {
+                modalDetalhes.classList.remove('show');
+                modalEdicao.classList.add('show');
+                prefillEditForm(currentEditIndex);
+            });
+
+            // Pré-preencher formulário de edição
+            function prefillEditForm(index) {
+                const item = itemsData[index];
+                document.getElementById('edit-item-id').value = index + 1;
+                
+                const formGrid = document.getElementById('edit-form-grid');
+                formGrid.innerHTML = '';
+                
+                const labels = {
+                    equipamento: 'Equipamento', capacidade: 'Capacidade', horimetro: 'Horímetro',
+                    frota: 'Frota', placa: 'Placa', nSerie: 'Nº de Série', dtSgc: 'DT SGC',
+                    renavam: 'RENAVAM', chassi: 'Chassi', anoFabricacao: 'Ano Fabricação',
+                    anoModelo: 'Ano Modelo', especieTipo: 'Espécie / Tipo', marcaModelo: 'Marca / Modelo',
+                    dataInicio: 'Data de Início', dataValidade: 'Data de Validade', observacoes: 'Observações'
+                };
+                
+                for (const key in labels) {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    const label = document.createElement('label');
+                    label.textContent = labels[key];
+                    const input = document.createElement(['observacoes'].includes(key) ? 'textarea' : ['equipamento', 'frota', 'especieTipo'].includes(key) ? 'select' : 'input');
+                    input.id = `edit-${key}`;
+                    
+                    if (input.tagName === 'INPUT') {
+                        input.type = ['horimetro', 'renavam', 'anoFabricacao', 'anoModelo'].includes(key) ? 'number' : ['dtSgc', 'dataInicio', 'dataValidade'].includes(key) ? 'datetime-local' : 'text';
+                        input.value = item[key];
+                        if (key === 'renavam') input.maxLength = 11;
+                    } else if (input.tagName === 'TEXTAREA') {
+                        input.value = item[key];
+                    } else if (input.tagName === 'SELECT') {
+                        let options = [];
+                        if (key === 'equipamento') {
+                            options = ['COMBOIO', 'CAVALO', 'CARRETA', 'GUINDASTE', 'ORMIG', 'EMPILHADEIRA', 'CAMINHÃO'];
+                        } else if (key === 'frota') {
+                            options = ['2091', '6082', '7017', '7018', '7019', '7020', '13004', '13006', '13009', '13012', '13015', '14027', '17512', '40/100/33', '40/100/34', '40/100/42', '40/100/43', '40/100/45', '40/110/14', '40/110/18', '40/110/19', '40/110/22', '40/120/02', '40/200/01', '40/250/14', '40/250/15', '40/250/16', '40/250/17', '40/250/18', '40/250/20', '40/250/21', '40/250/23', '40/250/30', '40/250/31', '40/250/35', '40/250/36', '40/250/37', '40/250/38', '40/30/53', '40/30/55', '40/30/57', '40/30/58', '40/30/59', '40/60/71', '40/60/77', '40/75/05', '40/75/11', '40/75/14', '40/75/15', '40/85/08', '40/85/17', '40/85/19', '42/30/01', '42/30/02', '42/55/02', '42/70/04', '42/70/05', '42/70/07', '46/10/04', '46/10/05', '46/10/06', '46/10/07', '46/10/08', '46/14/01', '46/14/02', '46/14/03', '76/03/02', '76/03/03', '76/03/04', '76/03/05', '76/03/06', '76/03/07', '76/03/08', '76/03/09', '76/04/03', '76/04/04', '76/04/05', '76/04/06', '76/04/07', '76/04/08', '76/04/09', '76/04/10', '76/04/11', '76/04/12', '76/04/13', '76/04/14', '76/05/02', '76/05/03', '76/05/04', '76/07/08', '76/07/09', '76/07/10', '76/07/12', '76/07/13', '76/07/14', '76/16/02', '76/16/03', '80/10/01', '80/10/02', '80/10/03', '80/10/04', '80/10/05', '80/10/06', '80/10/07', '80/10/08', '80/10/09', '80/10/10', '80/10/11', '80/10/12', '80/10/13', '80/10/14', '80/10/15', '80/10/16', '80/10/17', '80/10/18', '80/10/19', '80/10/20', '80/22/09'];
+                        } else if (key === 'especieTipo') {
+                             options = ['MISTO', 'CARGA', 'PASSEIO', 'ESPECIAL', 'TRAÇÃO'];
+                        }
+                        
+                        input.innerHTML = `<option value="">Selecione...</option>`;
+                        options.forEach(opt => {
+                            input.innerHTML += `<option value="${opt}" ${item[key] === opt ? 'selected' : ''}>${opt}</option>`;
+                        });
+                        if (!options.includes(item[key])) {
+                            input.innerHTML += `<option value="${item[key]}" selected>${item[key]}</option>`;
+                        }
+                        input.innerHTML += `<option value="adicionar-novo">Adicionar nova frota...</option>`;
+                        
+                        if (key === 'frota') {
+                            input.addEventListener('change', (e) => handleDynamicSelect(e, input, 'frota'));
+                        } else if (key === 'especieTipo') {
+                            input.addEventListener('change', (e) => handleDynamicSelect(e, input, 'espécie/tipo'));
+                        }
+                    }
+
+                    div.appendChild(label);
+                    div.appendChild(input);
+                    formGrid.appendChild(div);
+                }
+            }
+
+            // Navegação e atualização do formulário de edição
+            document.getElementById('edit-item-id').addEventListener('input', (e) => {
+                const newIndex = parseInt(e.target.value) - 1;
+                if (newIndex >= 0 && newIndex < itemsData.length) {
+                    currentEditIndex = newIndex;
+                    prefillEditForm(currentEditIndex);
+                }
+            });
+
+            // Limpar formulário de edição
+            document.getElementById('btn-limpar-edicao').addEventListener('click', () => {
+                if (confirm('Tem certeza que deseja apagar todos os dados deste cadastro?')) {
+                    const formInputs = document.querySelectorAll('#form-edicao input, #form-edicao select, #form-edicao textarea');
+                    formInputs.forEach(input => {
+                        if (input.id !== 'edit-item-id') {
+                            input.value = '';
+                        }
+                    });
+                }
+            });
+
+            // Salvar alterações
+            formEdicao.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const updatedItem = {};
+                const formInputs = document.querySelectorAll('#form-edicao input, #form-edicao select, #form-edicao textarea');
+                formInputs.forEach(input => {
+                    const key = input.id.replace('edit-', '');
+                    updatedItem[key] = input.value;
+                });
+
+                if (currentEditIndex !== null) {
+                    itemsData[currentEditIndex] = updatedItem;
+                    localStorage.setItem('controleMEVItems', JSON.stringify(itemsData));
+                    modalEdicao.classList.remove('show');
+                    updateTable();
+                }
+            });
+
+            // Exportar para Excel
+            exportExcelBtn.addEventListener('click', () => {
+                const table = document.querySelector('table');
+                let csv = 'sep=;\n';
+                table.querySelectorAll('th').forEach(th => csv += `"${th.innerText}";`);
+                csv += '\n';
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    row.querySelectorAll('td').forEach(td => csv += `"${td.innerText.replace(/"/g, '""')}";`);
+                    csv += '\n';
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'Controle_MEV.csv';
+                link.click();
+            });
+
+            // Exportar para PDF
+            document.querySelector('#modal-detalhes .pdf-btn').addEventListener('click', () => {
+                if (currentEditIndex === null) return;
+                const item = itemsData[currentEditIndex];
+                const status = getStatus(item.dataInicio, item.dataValidade);
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text(`Relatório de Cadastro - Nº ${currentEditIndex + 1}`, 105, 20, null, null, 'center');
+                doc.setFontSize(12);
+
+                const details = [
+                    { label: 'Equipamento', value: item.equipamento },
+                    { label: 'Capacidade', value: item.capacidade },
+                    { label: 'Horímetro', value: item.horimetro },
+                    { label: 'Frota', value: item.frota },
+                    { label: 'Placa', value: item.placa },
+                    { label: 'Nº de Série', value: item.nSerie },
+                    { label: 'DT SGC', value: formatDate(item.dtSgc) },
+                    { label: 'RENAVAM', value: item.renavam },
+                    { label: 'Chassi', value: item.chassi },
+                    { label: 'Ano de Fabricação', value: item.anoFabricacao },
+                    { label: 'Ano do Modelo', value: item.anoModelo },
+                    { label: 'Espécie / Tipo', value: item.especieTipo },
+                    { label: 'Marca / Modelo', value: item.marcaModelo },
+                    { label: 'Data de Início', value: formatDate(item.dataInicio) },
+                    { label: 'Data de Validade', value: formatDate(item.dataValidade) },
+                    { label: 'Status', value: status.text },
+                    { label: 'Observações', value: item.observacoes }
+                ];
+                
+                let y = 40;
+                const lineHeight = 10;
+                
+                details.forEach(detail => {
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`${detail.label}:`, 20, y);
+                    doc.setFont(undefined, 'normal');
+                    
+                    const valueText = doc.splitTextToSize(detail.value, 160);
+                    doc.text(valueText, 60, y);
+                    y += lineHeight * valueText.length;
+                });
+
+                doc.save(`relatorio_item_${currentEditIndex + 1}.pdf`);
+            });
+
+            function formatDate(datetimeLocal) {
+                if (!datetimeLocal) return '';
+                const date = new Date(datetimeLocal);
+                return date.toLocaleDateString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            setInterval(updateTable, 60000);
+            updateTable();
+        });
+    </script>
+</body>
+</html>
