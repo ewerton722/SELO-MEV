@@ -175,7 +175,7 @@
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #333;
-            white-space: nowrap; /* Impede que o conteúdo da célula quebre */
+            white-space: nowrap;
         }
 
         th {
@@ -582,6 +582,27 @@
             background-color: #555;
             color: white;
         }
+        
+        /* Novo modal para adicionar item (Frota, Espécie) */
+        .add-new-modal .modal-content {
+            max-width: 400px;
+            text-align: center;
+        }
+        .add-new-modal h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        .add-new-modal input {
+            width: 100%;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
 
         /* Media Queries para responsividade */
         @media (min-width: 768px) {
@@ -727,7 +748,7 @@
                         <select id="frota" required>
                             <option value="">Selecione...</option>
                             <option value="2091">2091</option><option value="6082">6082</option><option value="7017">7017</option><option value="7018">7018</option><option value="7019">7019</option><option value="7020">7020</option><option value="13004">13004</option><option value="13006">13006</option><option value="13009">13009</option><option value="13012">13012</option><option value="13015">13015</option><option value="14027">14027</option><option value="17512">17512</option><option value="40/100/33">40/100/33</option><option value="40/100/34">40/100/34</option><option value="40/100/42">40/100/42</option><option value="40/100/43">40/100/43</option><option value="40/100/45">40/100/45</option><option value="40/110/14">40/110/14</option><option value="40/110/18">40/110/18</option><option value="40/110/19">40/110/19</option><option value="40/110/22">40/110/22</option><option value="40/120/02">40/120/02</option><option value="40/200/01">40/200/01</option><option value="40/250/14">40/250/14</option><option value="40/250/15">40/250/15</option><option value="40/250/16">40/250/16</option><option value="40/250/17">40/250/17</option><option value="40/250/18">40/250/18</option><option value="40/250/20">40/250/20</option><option value="40/250/21">40/250/21</option><option value="40/250/23">40/250/23</option><option value="40/250/30">40/250/30</option><option value="40/250/31">40/250/31</option><option value="40/250/35">40/250/35</option><option value="40/250/36">40/250/36</option><option value="40/250/37">40/250/37</option><option value="40/250/38">40/250/38</option><option value="40/30/53">40/30/53</option><option value="40/30/55">40/30/55</option><option value="40/30/57">40/30/57</option><option value="40/30/58">40/30/58</option><option value="40/30/59">40/30/59</option><option value="40/60/71">40/60/71</option><option value="40/60/77">40/60/77</option><option value="40/75/05">40/75/05</option><option value="40/75/11">40/75/11</option><option value="40/75/14">40/75/14</option><option value="40/75/15">40/75/15</option><option value="40/85/08">40/85/08</option><option value="40/85/17">40/85/17</option><option value="40/85/19">40/85/19</option><option value="42/30/01">42/30/01</option><option value="42/30/02">42/30/02</option><option value="42/55/02">42/55/02</option><option value="42/70/04">42/70/04</option><option value="42/70/05">42/70/05</option><option value="42/70/07">42/70/07</option><option value="46/10/04">46/10/04</option><option value="46/10/05">46/10/05</option><option value="46/10/06">46/10/06</option><option value="46/10/07">46/10/07</option><option value="46/10/08">46/10/08</option><option value="46/14/01">46/14/01</option><option value="46/14/02">46/14/02</option><option value="46/14/03">46/14/03</option><option value="76/03/02">76/03/02</option><option value="76/03/03">76/03/03</option><option value="76/03/04">76/03/04</option><option value="76/03/05">76/03/05</option><option value="76/03/06">76/03/06</option><option value="76/03/07">76/03/07</option><option value="76/03/08">76/03/08</option><option value="76/03/09">76/03/09</option><option value="76/04/03">76/04/03</option><option value="76/04/04">76/04/04</option><option value="76/04/05">76/04/05</option><option value="76/04/06">76/04/06</option><option value="76/04/07">76/04/07</option><option value="76/04/08">76/04/08</option><option value="76/04/09">76/04/09</option><option value="76/04/10">76/04/10</option><option value="76/04/11">76/04/11</option><option value="76/04/12">76/04/12</option><option value="76/04/13">76/04/13</option><option value="76/04/14">76/04/14</option><option value="76/05/02">76/05/02</option><option value="76/05/03">76/05/03</option><option value="76/05/04">76/05/04</option><option value="76/07/08">76/07/08</option><option value="76/07/09">76/07/09</option><option value="76/07/10">76/07/10</option><option value="76/07/12">76/07/12</option><option value="76/07/13">76/07/13</option><option value="76/07/14">76/07/14</option><option value="76/16/02">76/16/02</option><option value="76/16/03">76/16/03</option><option value="80/10/01">80/10/01</option><option value="80/10/02">80/10/02</option><option value="80/10/03">80/10/03</option><option value="80/10/04">80/10/04</option><option value="80/10/05">80/10/05</option><option value="80/10/06">80/10/06</option><option value="80/10/07">80/10/07</option><option value="80/10/08">80/10/08</option><option value="80/10/09">80/10/09</option><option value="80/10/10">80/10/10</option><option value="80/10/11">80/10/11</option><option value="80/10/12">80/10/12</option><option value="80/10/13">80/10/13</option><option value="80/10/14">80/10/14</option><option value="80/10/15">80/10/15</option><option value="80/10/16">80/10/16</option><option value="80/10/17">80/10/17</option><option value="80/10/18">80/10/18</option><option value="80/10/19">80/10/19</option><option value="80/10/20">80/10/20</option><option value="80/22/09">80/22/09</option>
-                            <option value="adicionar-novo">Adicionar nova frota...</option>
+                            <option value="adicionar-nova-frota">Adicionar nova frota...</option>
                         </select>
                     </div>
 
@@ -775,7 +796,7 @@
                             <option value="PASSEIO">PASSEIO</option>
                             <option value="ESPECIAL">ESPECIAL</option>
                             <option value="TRAÇÃO">TRAÇÃO</option>
-                            <option value="adicionar-novo">Adicionar nova espécie/tipo...</option>
+                            <option value="adicionar-nova-especie">Adicionar nova espécie/tipo...</option>
                         </select>
                     </div>
 
@@ -912,6 +933,17 @@
             </div>
         </div>
     </div>
+    
+    <div id="modal-add-new-option" class="modal add-new-modal">
+        <div class="modal-content">
+            <h4 id="add-new-modal-title"></h4>
+            <input type="text" id="new-option-input" placeholder="Digite o novo valor">
+            <div class="confirm-actions">
+                <button id="add-new-cancel" class="btn-limpar">Cancelar</button>
+                <button id="add-new-save" class="btn-salvar">Salvar</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -931,6 +963,7 @@
             const modalRemoveMultiple = document.getElementById('modal-remove-multiple');
             const modalReset = document.getElementById('modal-reset');
             const modalExitEdit = document.getElementById('modal-exit-edit');
+            const modalAddNewOption = document.getElementById('modal-add-new-option');
             
             const formCadastro = document.getElementById('form-cadastro');
             const formEdicao = document.getElementById('form-edicao');
@@ -941,30 +974,54 @@
             const especieTipoSelect = document.getElementById('especie-tipo');
             const filterStatus = document.getElementById('filter-status');
             const searchId = document.getElementById('search-id');
+            
+            const addNewTitle = document.getElementById('add-new-modal-title');
+            const addNewInput = document.getElementById('new-option-input');
+            const addNewSaveBtn = document.getElementById('add-new-save');
+            const addNewCancelBtn = document.getElementById('add-new-cancel');
 
             let itemsData = JSON.parse(localStorage.getItem('controleMEVItems')) || [];
             let currentEditIndex = null;
             let selectedForRemoval = new Set();
             const SECURITY_CODE = '0508';
 
-            // Adicionar nova frota e espécie/tipo
+            // Event listener para abrir o modal de adicionar nova opção
             frotaSelect.addEventListener('change', (e) => handleDynamicSelect(e, frotaSelect, 'frota'));
             especieTipoSelect.addEventListener('change', (e) => handleDynamicSelect(e, especieTipoSelect, 'espécie/tipo'));
+            
+            let currentDynamicSelect = null;
 
             function handleDynamicSelect(e, selectElement, type) {
-                if (e.target.value === 'adicionar-novo') {
-                    const newValue = prompt(`Digite o novo ${type}:`);
-                    if (newValue) {
-                        const newOption = document.createElement('option');
-                        newOption.value = newValue.toUpperCase();
-                        newOption.textContent = newValue.toUpperCase();
-                        selectElement.insertBefore(newOption, selectElement.querySelector('option[value="adicionar-novo"]'));
-                        selectElement.value = newValue.toUpperCase();
-                    } else {
-                        selectElement.value = '';
-                    }
+                if (e.target.value === `adicionar-nova-${type.replace(/[^a-z0-9]/gi, '')}`) {
+                    currentDynamicSelect = selectElement;
+                    addNewTitle.textContent = `Adicionar nova ${type}:`;
+                    addNewInput.placeholder = `Digite a nova ${type}`;
+                    addNewInput.value = '';
+                    modalAddNewOption.classList.add('show');
                 }
             }
+
+            // Lógica para o modal de adicionar nova opção
+            addNewSaveBtn.addEventListener('click', () => {
+                const newValue = addNewInput.value.trim().toUpperCase();
+                if (newValue && currentDynamicSelect) {
+                    const newOption = document.createElement('option');
+                    newOption.value = newValue;
+                    newOption.textContent = newValue;
+                    currentDynamicSelect.insertBefore(newOption, currentDynamicSelect.querySelector(`option[value^="adicionar-nova"]`));
+                    currentDynamicSelect.value = newValue;
+                }
+                modalAddNewOption.classList.remove('show');
+                currentDynamicSelect = null;
+            });
+            
+            addNewCancelBtn.addEventListener('click', () => {
+                if (currentDynamicSelect) {
+                    currentDynamicSelect.value = '';
+                }
+                modalAddNewOption.classList.remove('show');
+                currentDynamicSelect = null;
+            });
 
             // Lógica para abrir modais
             addItemBtn.addEventListener('click', () => modalCadastro.classList.add('show'));
@@ -1311,13 +1368,9 @@
                         if (!options.includes(item[key])) {
                             input.innerHTML += `<option value="${item[key]}" selected>${item[key]}</option>`;
                         }
-                        input.innerHTML += `<option value="adicionar-novo">Adicionar nova frota...</option>`;
+                        input.innerHTML += `<option value="adicionar-nova-${key.replace(/[^a-z0-9]/gi, '')}">Adicionar nova ${labels[key].toLowerCase().replace('/', ' ')}...</option>`;
                         
-                        if (key === 'frota') {
-                            input.addEventListener('change', (e) => handleDynamicSelect(e, input, 'frota'));
-                        } else if (key === 'especieTipo') {
-                            input.addEventListener('change', (e) => handleDynamicSelect(e, input, 'espécie/tipo'));
-                        }
+                        input.addEventListener('change', (e) => handleDynamicSelect(e, input, labels[key].toLowerCase().replace('/', ' ')));
                     }
 
                     div.appendChild(label);
